@@ -1,6 +1,6 @@
 # Chapter 2 — Worked Examples: Root Finding
 
-Companion script: [`ch02_examples.py`](ch02_examples.py) · Lecture: [Lecture 2](../lectures/02-root-finding.md)
+Companion script: [`ch02_examples.py`](ch02_examples.py) · Lecture: [Chapter 2](../lectures/ch02-equations-in-one-variable.md)
 
 Running example: $f(x) = x^3 - 2x - 5$ (Wallis's classical equation), root $r = 2.0945514815423265$.
 

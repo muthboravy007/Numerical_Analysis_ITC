@@ -1,7 +1,7 @@
 # Chapter 1 — Worked Examples: Floating Point and Error Analysis
 
 Companion script: [`ch01_examples.py`](ch01_examples.py) reproduces every number below.
-Lecture: [Lecture 1](../lectures/01-floating-point-and-errors.md)
+Lecture: [Chapter 1](../lectures/ch01-mathematical-preliminaries.md)
 
 ---
 
