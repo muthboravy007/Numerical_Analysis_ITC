@@ -140,6 +140,8 @@ def tridiagonal_solve(a, b, c, d):
     """Thomas algorithm. a: sub-diagonal (n-1), b: diagonal (n),
     c: super-diagonal (n-1), d: rhs (n). Cost O(n)."""
     n = len(b)
+    if n == 1:
+        return np.array([d[0] / b[0]], dtype=float)
     cp = np.zeros(n - 1)
     dp = np.zeros(n)
     cp[0] = c[0] / b[0]
