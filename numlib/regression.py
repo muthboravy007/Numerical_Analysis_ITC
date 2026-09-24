@@ -121,7 +121,8 @@ def gauss_newton(r, J, beta0, tol=1e-10, max_iter=100):
 
 
 def levenberg_marquardt(r, J, beta0, lam=1e-2, tol=1e-10, max_iter=200):
-    """Levenberg-Marquardt: (J^T J + lam diag(J^T J)) dp = -J^T r with adaptive lam."""
+    """Levenberg-Marquardt: (J^T J + lam D) dp = -J^T r with D = diag(J^T J)
+    (floored to stay positive) and adaptive lam."""
     beta = np.asarray(beta0, dtype=float)
     cost = np.sum(r(beta) ** 2)
     history = [beta.copy()]
@@ -129,16 +130,24 @@ def levenberg_marquardt(r, J, beta0, lam=1e-2, tol=1e-10, max_iter=200):
         Jb, rb = J(beta), r(beta)
         A = Jb.T @ Jb
         g = Jb.T @ rb
-        dp = np.linalg.solve(A + lam * np.diag(np.diag(A)), -g)
+        D = np.diag(np.maximum(np.diag(A), 1e-12 * max(1.0, np.max(np.diag(A)))))
+        try:
+            dp = np.linalg.solve(A + lam * D, -g)
+        except np.linalg.LinAlgError:
+            lam *= 10
+            continue
         new = beta + dp
-        new_cost = np.sum(r(new) ** 2)
-        if new_cost < cost:
-            beta, cost, lam = new, new_cost, lam / 10
+        with np.errstate(over="ignore", invalid="ignore"):
+            new_cost = np.sum(r(new) ** 2)
+        if np.isfinite(new_cost) and new_cost < cost:
+            beta, cost, lam = new, new_cost, max(lam / 10, 1e-12)
             history.append(beta.copy())
             if np.linalg.norm(dp) < tol * max(1.0, np.linalg.norm(beta)):
                 break
         else:
             lam *= 10
+            if lam > 1e16:
+                break
     return beta, history
 
 
@@ -150,3 +159,95 @@ def vif(X):
         others = np.delete(X, j, axis=1)
         out.append(1 / (1 - ols(others, X[:, j]).r2))
     return np.array(out)
+
+
+def soft_threshold(z, g):
+    return np.sign(z) * np.maximum(np.abs(z) - g, 0.0)
+
+
+def lasso_cd(X, y, lam, max_iter=10_000, tol=1e-10):
+    """Lasso min (1/2n)||y - Xb||^2 + lam ||b||_1 by cyclic coordinate descent.
+    X should be centred/standardised and y centred (no intercept)."""
+    X = np.asarray(X, dtype=float)
+    y = np.asarray(y, dtype=float)
+    n, p = X.shape
+    b = np.zeros(p)
+    col_sq = (X ** 2).sum(axis=0) / n
+    r = y - X @ b
+    for it in range(max_iter):
+        b_old = b.copy()
+        for j in range(p):
+            r += X[:, j] * b[j]
+            b[j] = soft_threshold(X[:, j] @ r / n, lam) / col_sq[j]
+            r -= X[:, j] * b[j]
+        if np.max(np.abs(b - b_old)) < tol:
+            break
+    return b, it + 1
+
+
+def huber_irls(X, y, c=1.345, max_iter=100, tol=1e-10, add_intercept=True):
+    """Robust regression with Huber's loss by iteratively reweighted least squares."""
+    X = np.asarray(X, dtype=float)
+    if X.ndim == 1:
+        X = X[:, None]
+    if add_intercept:
+        X = np.column_stack([np.ones(len(y)), X])
+    beta = np.linalg.lstsq(X, y, rcond=None)[0]
+    for it in range(max_iter):
+        r = y - X @ beta
+        s = np.median(np.abs(r - np.median(r))) / 0.6745 or 1.0
+        u = np.abs(r / s)
+        w = np.where(u <= c, 1.0, c / u)
+        sw = np.sqrt(w)
+        new = np.linalg.lstsq(X * sw[:, None], y * sw, rcond=None)[0]
+        if np.max(np.abs(new - beta)) < tol:
+            beta = new
+            break
+        beta = new
+    return beta, w, it + 1
+
+
+def glm_irls(X, y, family="logistic", offset=None, max_iter=50, tol=1e-10):
+    """Fit a GLM with canonical link by IRLS (= Newton's method).
+    family: 'logistic' (y in {0,1}) or 'poisson' (counts). Returns (beta, cov, history)."""
+    X = np.asarray(X, dtype=float)
+    y = np.asarray(y, dtype=float)
+    off = np.zeros(len(y)) if offset is None else np.asarray(offset, dtype=float)
+    beta = np.zeros(X.shape[1])
+    history = [beta.copy()]
+    for _ in range(max_iter):
+        eta = X @ beta + off
+        if family == "logistic":
+            mu = 1 / (1 + np.exp(-eta))
+            w = mu * (1 - mu)
+        elif family == "poisson":
+            mu = np.exp(eta)
+            w = mu
+        else:
+            raise ValueError(family)
+        z = eta - off + (y - mu) / w          # working response
+        WX = X * w[:, None]
+        new = np.linalg.solve(X.T @ WX, WX.T @ z)
+        history.append(new.copy())
+        if np.max(np.abs(new - beta)) < tol:
+            beta = new
+            break
+        beta = new
+    eta = X @ beta + off
+    mu = 1 / (1 + np.exp(-eta)) if family == "logistic" else np.exp(eta)
+    w = mu * (1 - mu) if family == "logistic" else mu
+    cov = np.linalg.inv(X.T @ (X * w[:, None]))
+    return beta, cov, history
+
+
+def kfold_cv_mse(fit_predict, X, y, k=5, seed=0):
+    """Generic K-fold cross-validation. fit_predict(Xtr, ytr, Xte) -> predictions."""
+    rng = np.random.default_rng(seed)
+    idx = rng.permutation(len(y))
+    folds = np.array_split(idx, k)
+    err = 0.0
+    for f in folds:
+        tr = np.setdiff1d(idx, f)
+        pred = fit_predict(X[tr], y[tr], X[f])
+        err += np.sum((pred - y[f]) ** 2)
+    return err / len(y)
