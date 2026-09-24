@@ -42,7 +42,7 @@
 
 **C3.** Fractions on the square grid: $0.353$ (root $1$), $0.323$, $0.323$ (complex roots). Theory says the basins are congruent under $120°$ rotation; the square window is not rotation-invariant, which biases the fractions. Every boundary point touches all three basins (Wada property) — a fractal boundary, showing why Newton needs good starting values.
 
-**C4.** Safeguarded Newton on $[-2,5]$ starts at the midpoint $1.5$ and produces $-1.694,\ -0.0970,\ 6.1\times10^{-4},\ -1.5\times10^{-10},\ 0$: every Newton step stayed inside the shrinking bracket, so no bisection fallback was needed, yet the bracket guarantees that a wild step (like pure Newton's jump from $x_0 = 5$ to $-45$) would be rejected. Pure Newton from $5$ diverges (Example 2.3.5).
+**C4.** Safeguarded Newton on $[-2,5]$ starts at the midpoint $1.5$ and produces $-1.694,\ -0.0970,\ 6.1\times10^{-4},\ -1.5\times10^{-10},\ 0$: every Newton step stayed inside the shrinking bracket, so no bisection fallback was needed, yet the bracket guarantees that a wild step (like pure Newton's jump from $x_0 = 5$ to $-30.7$) would be rejected. Pure Newton from $5$ diverges (Example 2.3.5).
 
 **C5.** `np.roots` max error $2.8\times10^{-9}$; deflation smallest-first max error $4\times10^{-11}$. Deflating the *largest* roots first gives max error $9.8\times10^{-10}$ — about 25× worse — because rounding errors in the quotient coefficients perturb the remaining (smaller) roots. The companion-matrix approach is backward stable for the *matrix*, but polynomial roots are ill-conditioned in the coefficients (Wilkinson), hence ~$10^{-9}$ errors despite double precision.
 
