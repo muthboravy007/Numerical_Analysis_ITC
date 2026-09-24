@@ -133,3 +133,65 @@ def cubic_spline_eval(x, y, M, t):
     b = t - x[i]
     return (M[i] * a ** 3 / (6 * h) + M[i + 1] * b ** 3 / (6 * h)
             + (y[i] / h - M[i] * h / 6) * a + (y[i + 1] / h - M[i + 1] * h / 6) * b)
+
+
+def neville(x, y, t):
+    """Neville's iterated interpolation. Returns (value, table Q)."""
+    x = np.asarray(x, dtype=float)
+    n = len(x)
+    Q = np.full((n, n), np.nan)
+    Q[:, 0] = y
+    for i in range(1, n):
+        for j in range(1, i + 1):
+            Q[i, j] = ((t - x[i - j]) * Q[i, j - 1] - (t - x[i]) * Q[i - 1, j - 1]) / (x[i] - x[i - j])
+    return Q[n - 1, n - 1], Q
+
+
+def hermite_coefficients(x, f, df):
+    """Hermite interpolation via divided differences with doubled nodes.
+    Returns (z, coef) so that H(t) = newton_eval(z, coef, t)."""
+    x = np.asarray(x, dtype=float)
+    n = len(x)
+    z = np.repeat(x, 2)
+    Q = np.zeros((2 * n, 2 * n))
+    for i in range(n):
+        Q[2 * i, 0] = Q[2 * i + 1, 0] = f[i]
+        Q[2 * i + 1, 1] = df[i]
+        if i > 0:
+            Q[2 * i, 1] = (Q[2 * i, 0] - Q[2 * i - 1, 0]) / (z[2 * i] - z[2 * i - 1])
+    for j in range(2, 2 * n):
+        for i in range(j, 2 * n):
+            Q[i, j] = (Q[i, j - 1] - Q[i - 1, j - 1]) / (z[i] - z[i - j])
+    return z, np.diag(Q).copy()
+
+
+def clamped_cubic_spline(x, y, fp0, fpn):
+    """Second derivatives M_i of the clamped spline with S'(x0)=fp0, S'(xn)=fpn."""
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+    n = len(x) - 1
+    h = np.diff(x)
+    A = np.zeros((n + 1, n + 1))
+    rhs = np.zeros(n + 1)
+    A[0, 0], A[0, 1] = 2 * h[0], h[0]
+    rhs[0] = 6 * ((y[1] - y[0]) / h[0] - fp0)
+    A[n, n - 1], A[n, n] = h[n - 1], 2 * h[n - 1]
+    rhs[n] = 6 * (fpn - (y[n] - y[n - 1]) / h[n - 1])
+    for i in range(1, n):
+        A[i, i - 1] = h[i - 1]
+        A[i, i] = 2 * (h[i - 1] + h[i])
+        A[i, i + 1] = h[i]
+        rhs[i] = 6 * ((y[i + 1] - y[i]) / h[i] - (y[i] - y[i - 1]) / h[i - 1])
+    return np.linalg.solve(A, rhs)
+
+
+def spline_coefficients(x, y, M):
+    """Convert (y_i, M_i) to B&F form S_j(t) = a_j + b_j(t-x_j) + c_j(t-x_j)^2 + d_j(t-x_j)^3."""
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+    h = np.diff(x)
+    a = y[:-1]
+    c = M[:-1] / 2
+    d = (M[1:] - M[:-1]) / (6 * h)
+    b = (y[1:] - y[:-1]) / h - h * (2 * M[:-1] + M[1:]) / 6
+    return a, b, c, d

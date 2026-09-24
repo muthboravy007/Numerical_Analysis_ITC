@@ -146,3 +146,52 @@ def monte_carlo_nd(f, lows, highs, n, rng=None):
     X = rng.uniform(lows, highs, size=(n, len(lows)))
     y = vol * f(X)
     return y.mean(), y.std(ddof=1) / np.sqrt(n)
+
+
+def simpson38(f, a, b):
+    """Simpson's three-eighths rule (closed Newton-Cotes, n=3)."""
+    h = (b - a) / 3
+    return 3 * h / 8 * (f(a) + 3 * f(a + h) + 3 * f(a + 2 * h) + f(b))
+
+
+def three_point_endpoint(f, x, h):
+    """f'(x) ~ [-3f(x) + 4f(x+h) - f(x+2h)]/(2h), O(h^2)."""
+    return (-3 * f(x) + 4 * f(x + h) - f(x + 2 * h)) / (2 * h)
+
+
+def five_point_midpoint(f, x, h):
+    """f'(x) ~ [f(x-2h) - 8f(x-h) + 8f(x+h) - f(x+2h)]/(12h), O(h^4)."""
+    return (f(x - 2 * h) - 8 * f(x - h) + 8 * f(x + h) - f(x + 2 * h)) / (12 * h)
+
+
+def simpson_double(f, a, b, c, d, n, m):
+    """Composite Simpson for int_a^b int_{c(x)}^{d(x)} f(x, y) dy dx.
+    c, d may be constants or functions of x; n, m even."""
+    cf = c if callable(c) else (lambda x, c=c: c)
+    df = d if callable(d) else (lambda x, d=d: d)
+    xs = np.linspace(a, b, n + 1)
+    wx = np.ones(n + 1)
+    wx[1:-1:2], wx[2:-1:2] = 4, 2
+    total = 0.0
+    for xi, wi in zip(xs, wx):
+        ys = np.linspace(cf(xi), df(xi), m + 1)
+        wy = np.ones(m + 1)
+        wy[1:-1:2], wy[2:-1:2] = 4, 2
+        k = (df(xi) - cf(xi)) / m
+        total += wi * k / 3 * np.sum(wy * f(xi, ys))
+    return (b - a) / n / 3 * total
+
+
+def gauss_legendre_2d(f, a, b, c, d, n):
+    """n x n Gauss-Legendre product rule on a rectangle."""
+    x, w = np.polynomial.legendre.leggauss(n)
+    X = 0.5 * (b - a) * x + 0.5 * (a + b)
+    Y = 0.5 * (d - c) * x + 0.5 * (c + d)
+    XX, YY = np.meshgrid(X, Y, indexing="ij")
+    return 0.25 * (b - a) * (d - c) * np.sum(np.outer(w, w) * f(XX, YY))
+
+
+def gauss_hermite_expectation(g, mu, sigma, n):
+    """E[g(X)] for X ~ N(mu, sigma^2) by n-point Gauss-Hermite quadrature."""
+    x, w = np.polynomial.hermite.hermgauss(n)
+    return np.sum(w * g(mu + np.sqrt(2) * sigma * x)) / np.sqrt(np.pi)

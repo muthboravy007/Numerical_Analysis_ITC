@@ -154,3 +154,59 @@ def tridiagonal_solve(a, b, c, d):
     for i in range(n - 2, -1, -1):
         x[i] = dp[i] - cp[i] * x[i + 1]
     return x
+
+
+def gaussian_elimination_scaled(A, b):
+    """Gaussian elimination with scaled partial pivoting (B&F Alg. 6.3)."""
+    A = np.array(A, dtype=float)
+    b = np.array(b, dtype=float)
+    n = len(b)
+    s = np.max(np.abs(A), axis=1)
+    for k in range(n - 1):
+        p = k + np.argmax(np.abs(A[k:, k]) / s[k:])
+        if p != k:
+            A[[k, p]] = A[[p, k]]
+            b[[k, p]] = b[[p, k]]
+            s[[k, p]] = s[[p, k]]
+        for i in range(k + 1, n):
+            m = A[i, k] / A[k, k]
+            A[i, k:] -= m * A[k, k:]
+            b[i] -= m * b[k]
+    return back_substitution(A, b)
+
+
+def ldlt(A):
+    """A = L D L^T for symmetric A with nonzero leading minors (B&F Alg. 6.5).
+    Returns (L unit lower triangular, d diagonal entries)."""
+    A = np.asarray(A, dtype=float)
+    n = A.shape[0]
+    L = np.eye(n)
+    d = np.zeros(n)
+    for i in range(n):
+        v = L[i, :i] * d[:i]
+        d[i] = A[i, i] - L[i, :i] @ v
+        for j in range(i + 1, n):
+            L[j, i] = (A[j, i] - L[j, :i] @ v) / d[i]
+    return L, d
+
+
+def is_strictly_diagonally_dominant(A):
+    A = np.abs(np.asarray(A, dtype=float))
+    diag = np.diag(A)
+    return bool(np.all(diag > A.sum(axis=1) - diag))
+
+
+def iterative_refinement(A, b, iters=3, dtype_low=np.float32):
+    """Solve in low precision, refine residuals in float64 (B&F 7.5 idea)."""
+    import scipy.linalg as sla
+
+    A64 = np.asarray(A, dtype=float)
+    b64 = np.asarray(b, dtype=float)
+    lu = sla.lu_factor(A64.astype(dtype_low))
+    x = sla.lu_solve(lu, b64.astype(dtype_low)).astype(float)
+    history = [x.copy()]
+    for _ in range(iters):
+        r = b64 - A64 @ x
+        x = x + sla.lu_solve(lu, r.astype(dtype_low)).astype(float)
+        history.append(x.copy())
+    return x, history

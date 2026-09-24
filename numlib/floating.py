@@ -122,3 +122,27 @@ def variance_welford(xs):
         mean += delta / n
         m2 += delta * (x - mean)
     return m2 / (n - 1)
+
+
+def fl(x, digits, mode="round"):
+    """k-digit decimal machine number of x (B&F finite-digit arithmetic).
+    mode: 'round' or 'chop'."""
+    if x == 0 or not math.isfinite(x):
+        return x
+    e = math.floor(math.log10(abs(x))) + 1  # x = 0.d1d2... * 10^e
+    m = x / 10 ** e
+    scale = 10 ** digits
+    if mode == "chop":
+        m = math.trunc(m * scale) / scale
+    else:
+        m = math.floor(abs(m) * scale + 0.5) / scale * (1 if m > 0 else -1)
+    return float(f"{m * 10 ** e:.{digits}g}") if m else 0.0
+
+
+def ieee_double_decode(bits):
+    """Decode a 64-character string of 0/1 as an IEEE-754 double."""
+    bits = bits.replace(" ", "")
+    s = int(bits[0])
+    c = int(bits[1:12], 2)
+    f = int(bits[12:], 2) / 2 ** 52
+    return (-1) ** s * 2.0 ** (c - 1023) * (1 + f)

@@ -124,3 +124,87 @@ def pagerank(adj, damping=0.85, tol=1e-12, max_iter=1000):
             return r_new
         r = r_new
     return r
+
+
+def symmetric_power_method(A, x0, tol=1e-10, max_iter=1000):
+    """B&F Alg. 9.2: 2-norm scaling, Rayleigh quotient estimate (error ~ ratio^{2k})."""
+    A = np.asarray(A, dtype=float)
+    x = np.array(x0, dtype=float)
+    x /= np.linalg.norm(x)
+    hist = []
+    for _ in range(max_iter):
+        y = A @ x
+        mu = x @ y
+        hist.append(mu)
+        ny = np.linalg.norm(y)
+        if ny == 0:
+            return 0.0, x, hist
+        err = np.linalg.norm(x - y / ny)
+        x = y / ny
+        if err < tol:
+            break
+    return mu, x, hist
+
+
+def power_method_inf(A, x0, max_iter=100, tol=1e-10):
+    """B&F Alg. 9.1: infinity-norm scaling; mu = y_p where |x_p| = 1."""
+    A = np.asarray(A, dtype=float)
+    x = np.array(x0, dtype=float)
+    p = np.argmax(np.abs(x))
+    x /= x[p]
+    hist = []
+    for _ in range(max_iter):
+        y = A @ x
+        mu = y[p]
+        hist.append(mu)
+        p = np.argmax(np.abs(y))
+        if y[p] == 0:
+            return 0.0, x, hist
+        err = np.max(np.abs(x - y / y[p]))
+        x = y / y[p]
+        if err < tol:
+            break
+    return mu, x, hist
+
+
+def householder_tridiagonal(A):
+    """Reduce symmetric A to tridiagonal T = Q^T A Q by Householder (B&F Alg. 9.5)."""
+    T = np.array(A, dtype=float)
+    n = T.shape[0]
+    Q = np.eye(n)
+    for k in range(n - 2):
+        x = T[k + 1:, k]
+        alpha = -np.copysign(np.linalg.norm(x), x[0] if x[0] != 0 else 1.0)
+        v = x.copy()
+        v[0] -= alpha
+        nv = np.linalg.norm(v)
+        if nv < 1e-15:
+            continue
+        v /= nv
+        H = np.eye(n)
+        H[k + 1:, k + 1:] -= 2 * np.outer(v, v)
+        T = H @ T @ H
+        Q = Q @ H
+    return T, Q
+
+
+def wielandt_deflation(A, lam, v):
+    """B&F 9.3: Wielandt deflation with x = (row i of A) / (lam v_i), i = argmax |v_i|.
+    Returns B = A - lam v x^T (with row i zero); its other eigenvalues match A's."""
+    A = np.asarray(A, dtype=float)
+    v = np.asarray(v, dtype=float)
+    i = np.argmax(np.abs(v))
+    x = A[i, :] / (lam * v[i])
+    return A - lam * np.outer(v, x)
+
+
+def svd_via_eig(A):
+    """Teaching-only SVD from the eigen-decomposition of A^T A (squares kappa!)."""
+    A = np.asarray(A, dtype=float)
+    w, V = np.linalg.eigh(A.T @ A)
+    order = np.argsort(w)[::-1]
+    w, V = w[order], V[:, order]
+    s = np.sqrt(np.clip(w, 0, None))
+    r = int(np.sum(s > 1e-12 * s[0]))
+    U = A @ V[:, :r] / s[:r]
+    return U, s, V.T

@@ -174,3 +174,91 @@ def lotka_volterra(a=1.0, b=0.1, c=1.5, d=0.075):
         x, z = y
         return np.array([a * x - b * x * z, -c * z + d * x * z])
     return f
+
+
+# ---------------- B&F 5.3: Taylor methods ----------------
+
+def taylor2(f, ft, fy, t_span, y0, h):
+    """Taylor method of order 2 for scalar y' = f(t,y):
+    y_{k+1} = y_k + h f + h^2/2 (f_t + f_y f)."""
+    def step(_, t, y, h):
+        fv = f(t, y)
+        return y + h * fv + h * h / 2 * (ft(t, y) + fy(t, y) * fv)
+    return _integrate(step, f, t_span, y0, h)
+
+
+def modified_euler(f, t_span, y0, h):
+    """B&F's name for Heun's method (trapezoid predictor-corrector)."""
+    return heun(f, t_span, y0, h)
+
+
+# ---------------- B&F 5.5: Runge-Kutta-Fehlberg ----------------
+
+def rkf45(f, t_span, y0, tol=1e-6, hmax=0.25, hmin=1e-8):
+    """Runge-Kutta-Fehlberg (B&F Algorithm 5.3) for scalar or vector IVPs.
+    Returns (t, Y, h_used)."""
+    t0, tf = t_span
+    t = t0
+    y = np.atleast_1d(np.asarray(y0, dtype=float))
+    h = hmax
+    ts, Ys, hs = [t], [y.copy()], []
+    while t < tf - 1e-14:
+        h = min(h, tf - t)
+        k1 = h * f(t, y)
+        k2 = h * f(t + h / 4, y + k1 / 4)
+        k3 = h * f(t + 3 * h / 8, y + 3 / 32 * k1 + 9 / 32 * k2)
+        k4 = h * f(t + 12 * h / 13, y + 1932 / 2197 * k1 - 7200 / 2197 * k2 + 7296 / 2197 * k3)
+        k5 = h * f(t + h, y + 439 / 216 * k1 - 8 * k2 + 3680 / 513 * k3 - 845 / 4104 * k4)
+        k6 = h * f(t + h / 2, y - 8 / 27 * k1 + 2 * k2 - 3544 / 2565 * k3 + 1859 / 4104 * k4 - 11 / 40 * k5)
+        R = np.max(np.abs(k1 / 360 - 128 / 4275 * k3 - 2197 / 75240 * k4 + k5 / 50 + 2 / 55 * k6)) / h
+        if R <= tol:
+            t = t + h
+            y = y + 25 / 216 * k1 + 1408 / 2565 * k3 + 2197 / 4104 * k4 - k5 / 5
+            ts.append(t)
+            Ys.append(y.copy())
+            hs.append(h)
+        delta = 0.84 * (tol / R) ** 0.25 if R > 0 else 4.0
+        h = h * min(max(delta, 0.1), 4.0)
+        h = min(h, hmax)
+        if h < hmin:
+            raise RuntimeError("minimum h exceeded")
+    return np.array(ts), np.array(Ys), np.array(hs)
+
+
+# ---------------- B&F 5.6: multistep methods ----------------
+
+def adams_bashforth4(f, t_span, y0, h):
+    """Explicit 4-step Adams-Bashforth, started with RK4."""
+    t0, tf = t_span
+    n = int(round((tf - t0) / h))
+    t = t0 + h * np.arange(n + 1)
+    y0 = np.atleast_1d(np.asarray(y0, dtype=float))
+    Y = np.zeros((n + 1, len(y0)))
+    Y[0] = y0
+    for k in range(min(3, n)):
+        Y[k + 1] = rk4_step(f, t[k], Y[k], h)
+    F = [f(t[k], Y[k]) for k in range(min(4, n + 1))]
+    for k in range(3, n):
+        Y[k + 1] = Y[k] + h / 24 * (55 * F[k] - 59 * F[k - 1] + 37 * F[k - 2] - 9 * F[k - 3])
+        F.append(f(t[k + 1], Y[k + 1]))
+    return t, Y
+
+
+def adams_pc4(f, t_span, y0, h):
+    """Adams fourth-order predictor-corrector (AB4 predictor, AM3 corrector),
+    B&F Algorithm 5.4."""
+    t0, tf = t_span
+    n = int(round((tf - t0) / h))
+    t = t0 + h * np.arange(n + 1)
+    y0 = np.atleast_1d(np.asarray(y0, dtype=float))
+    Y = np.zeros((n + 1, len(y0)))
+    Y[0] = y0
+    for k in range(min(3, n)):
+        Y[k + 1] = rk4_step(f, t[k], Y[k], h)
+    F = [f(t[k], Y[k]) for k in range(min(4, n + 1))]
+    for k in range(3, n):
+        yp = Y[k] + h / 24 * (55 * F[k] - 59 * F[k - 1] + 37 * F[k - 2] - 9 * F[k - 3])
+        fp = f(t[k + 1], yp)
+        Y[k + 1] = Y[k] + h / 24 * (9 * fp + 19 * F[k] - 5 * F[k - 1] + F[k - 2])
+        F.append(f(t[k + 1], Y[k + 1]))
+    return t, Y

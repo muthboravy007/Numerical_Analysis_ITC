@@ -29,6 +29,11 @@ from . import (
     integration,
     optimization,
     ode,
+    approximation,
+    nonlinear_systems,
+    bvp,
+    pde,
+    regression,
 )
 
 __all__ = [
@@ -42,4 +47,9 @@ __all__ = [
     "integration",
     "optimization",
     "ode",
+    "approximation",
+    "nonlinear_systems",
+    "bvp",
+    "pde",
+    "regression",
 ]
