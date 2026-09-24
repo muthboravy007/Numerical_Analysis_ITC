@@ -130,6 +130,6 @@ def poisson_2d_sparse(m):
     """Sparse 5-point Laplacian on an m x m interior grid (size m^2)."""
     import scipy.sparse as sp
 
-    T = sp.diags([-1, 2, -1], [-1, 0, 1], shape=(m, m))
+    T = sp.diags([-1.0, 2.0, -1.0], [-1, 0, 1], shape=(m, m))
     I = sp.identity(m)
     return (sp.kron(I, T) + sp.kron(T, I)).tocsr()
