@@ -262,3 +262,25 @@ def adams_pc4(f, t_span, y0, h):
         Y[k + 1] = Y[k] + h / 24 * (9 * fp + 19 * F[k] - 5 * F[k - 1] + F[k - 2])
         F.append(f(t[k + 1], Y[k + 1]))
     return t, Y
+
+
+def heun3_step(f, t, y, h):
+    """B&F's third-order Heun method."""
+    k1 = f(t, y)
+    k2 = f(t + h / 3, y + h / 3 * k1)
+    k3 = f(t + 2 * h / 3, y + 2 * h / 3 * k2)
+    return y + h / 4 * (k1 + 3 * k3)
+
+
+def heun3(f, t_span, y0, h):
+    return _integrate(heun3_step, f, t_span, y0, h)
+
+
+def taylor4_linear_example(t_span, y0, h):
+    """Taylor method of order 4 for the model problem y' = y - t^2 + 1 (B&F 5.3)."""
+    def step(_, t, y, h):
+        f1 = y - t ** 2 + 1
+        f2 = y - t ** 2 + 1 - 2 * t
+        f3 = y - t ** 2 - 2 * t - 1
+        return y + h * f1 + h ** 2 / 2 * f2 + h ** 3 / 6 * f3 + h ** 4 / 24 * f3
+    return _integrate(step, None, t_span, y0, h)
