@@ -10,25 +10,25 @@ Every numerical result in the notes, solutions and exams is produced by a Python
 
 ## Contents by chapter
 
-| Ch | Topic | Lecture notes | Code | Exercises | Solutions |
-|---|---|---|---|---|---|
-| 1 | Mathematical preliminaries and error analysis | [notes](lectures/ch01-mathematical-preliminaries.md) | [py](lectures/code/ch01.py) | [ex](exercises/ch01_exercises.md) | [sol](solutions/ch01_solutions.md) |
-| 2 | Solutions of equations in one variable | [notes](lectures/ch02-equations-in-one-variable.md) | [py](lectures/code/ch02.py) | [ex](exercises/ch02_exercises.md) | [sol](solutions/ch02_solutions.md) |
-| 3 | Interpolation and polynomial approximation | [notes](lectures/ch03-interpolation.md) | [py](lectures/code/ch03.py) | [ex](exercises/ch03_exercises.md) | [sol](solutions/ch03_solutions.md) |
-| 4 | Numerical differentiation and integration | [notes](lectures/ch04-differentiation-integration.md) | [py](lectures/code/ch04.py) | [ex](exercises/ch04_exercises.md) | [sol](solutions/ch04_solutions.md) |
-| 5 | Initial-value problems for ODEs | [notes](lectures/ch05-initial-value-problems.md) | [py](lectures/code/ch05.py) | [ex](exercises/ch05_exercises.md) | [sol](solutions/ch05_solutions.md) |
-| 6 | Direct methods for linear systems | [notes](lectures/ch06-direct-linear-systems.md) | [py](lectures/code/ch06.py) | [ex](exercises/ch06_exercises.md) | [sol](solutions/ch06_solutions.md) |
-| 7 | Iterative techniques in matrix algebra | [notes](lectures/ch07-iterative-techniques.md) | [py](lectures/code/ch07.py) | [ex](exercises/ch07_exercises.md) | [sol](solutions/ch07_solutions.md) |
-| 8 | Approximation theory, data fitting, FFT | [notes](lectures/ch08-approximation-theory.md) | [py](lectures/code/ch08.py) | [ex](exercises/ch08_exercises.md) | [sol](solutions/ch08_solutions.md) |
-| 9 | Approximating eigenvalues, SVD | [notes](lectures/ch09-approximating-eigenvalues.md) | [py](lectures/code/ch09.py) | [ex](exercises/ch09_exercises.md) | [sol](solutions/ch09_solutions.md) |
-| 10 | Nonlinear systems of equations | [notes](lectures/ch10-nonlinear-systems.md) | [py](lectures/code/ch10.py) | [ex](exercises/ch10_exercises.md) | [sol](solutions/ch10_solutions.md) |
-| 11 | Boundary-value problems | [notes](lectures/ch11-boundary-value-problems.md) | [py](lectures/code/ch11.py) | [ex](exercises/ch11_exercises.md) | [sol](solutions/ch11_solutions.md) |
-| 12 | Partial differential equations | [notes](lectures/ch12-partial-differential-equations.md) | [py](lectures/code/ch12.py) | [ex](exercises/ch12_exercises.md) | [sol](solutions/ch12_solutions.md) |
-| 13 | **Regression and least squares** (simple, multiple, polynomial, ridge, lasso, WLS, robust, nonlinear, GLM) | [notes](lectures/ch13-regression-least-squares.md) | [py](lectures/code/ch13.py) | [ex](exercises/ch13_exercises.md) | [sol](solutions/ch13_solutions.md) |
-| 14 | **Symmetric matrices, SVD and PCA** | [notes](lectures/ch14-symmetric-matrices-svd-pca.md) | [py](lectures/code/ch14.py) | [ex](exercises/ch14_exercises.md) | [sol](solutions/ch14_solutions.md) |
-| 15 | **Numerical optimisation** (GD, Newton, BFGS, SGD/Adam, KKT, proximal methods, autodiff) | [notes](lectures/ch15-numerical-optimization.md) | [py](lectures/code/ch15.py) | [ex](exercises/ch15_exercises.md) | [sol](solutions/ch15_solutions.md) |
+| Ch | Topic | Lecture notes | Code | Worked examples | Exercises | Solutions |
+|---|---|---|---|---|---|---|
+| 1 | Mathematical preliminaries and error analysis | [notes](lectures/ch01-mathematical-preliminaries.md) | [py](lectures/code/ch01.py) | [examples](examples/ch01_examples.md) | [ex](exercises/ch01_exercises.md) | [sol](solutions/ch01_solutions.md) |
+| 2 | Solutions of equations in one variable | [notes](lectures/ch02-equations-in-one-variable.md) | [py](lectures/code/ch02.py) | [examples](examples/ch02_examples.md) | [ex](exercises/ch02_exercises.md) | [sol](solutions/ch02_solutions.md) |
+| 3 | Interpolation and polynomial approximation | [notes](lectures/ch03-interpolation.md) | [py](lectures/code/ch03.py) | [examples](examples/ch03_examples.md) | [ex](exercises/ch03_exercises.md) | [sol](solutions/ch03_solutions.md) |
+| 4 | Numerical differentiation and integration | [notes](lectures/ch04-differentiation-integration.md) | [py](lectures/code/ch04.py) | [examples](examples/ch04_examples.md) | [ex](exercises/ch04_exercises.md) | [sol](solutions/ch04_solutions.md) |
+| 5 | Initial-value problems for ODEs | [notes](lectures/ch05-initial-value-problems.md) | [py](lectures/code/ch05.py) | [examples](examples/ch05_examples.md) | [ex](exercises/ch05_exercises.md) | [sol](solutions/ch05_solutions.md) |
+| 6 | Direct methods for linear systems | [notes](lectures/ch06-direct-linear-systems.md) | [py](lectures/code/ch06.py) | [examples](examples/ch06_examples.md) | [ex](exercises/ch06_exercises.md) | [sol](solutions/ch06_solutions.md) |
+| 7 | Iterative techniques in matrix algebra | [notes](lectures/ch07-iterative-techniques.md) | [py](lectures/code/ch07.py) | [examples](examples/ch07_examples.md) | [ex](exercises/ch07_exercises.md) | [sol](solutions/ch07_solutions.md) |
+| 8 | Approximation theory, data fitting, FFT | [notes](lectures/ch08-approximation-theory.md) | [py](lectures/code/ch08.py) | [examples](examples/ch08_examples.md) | [ex](exercises/ch08_exercises.md) | [sol](solutions/ch08_solutions.md) |
+| 9 | Approximating eigenvalues, SVD | [notes](lectures/ch09-approximating-eigenvalues.md) | [py](lectures/code/ch09.py) | [examples](examples/ch09_examples.md) | [ex](exercises/ch09_exercises.md) | [sol](solutions/ch09_solutions.md) |
+| 10 | Nonlinear systems of equations | [notes](lectures/ch10-nonlinear-systems.md) | [py](lectures/code/ch10.py) | [examples](examples/ch10_examples.md) | [ex](exercises/ch10_exercises.md) | [sol](solutions/ch10_solutions.md) |
+| 11 | Boundary-value problems | [notes](lectures/ch11-boundary-value-problems.md) | [py](lectures/code/ch11.py) | [examples](examples/ch11_examples.md) | [ex](exercises/ch11_exercises.md) | [sol](solutions/ch11_solutions.md) |
+| 12 | Partial differential equations | [notes](lectures/ch12-partial-differential-equations.md) | [py](lectures/code/ch12.py) | [examples](examples/ch12_examples.md) | [ex](exercises/ch12_exercises.md) | [sol](solutions/ch12_solutions.md) |
+| 13 | **Regression and least squares** (simple, multiple, polynomial, ridge, lasso, WLS, robust, nonlinear, GLM) | [notes](lectures/ch13-regression-least-squares.md) | [py](lectures/code/ch13.py) | [examples](examples/ch13_examples.md) | [ex](exercises/ch13_exercises.md) | [sol](solutions/ch13_solutions.md) |
+| 14 | **Symmetric matrices, SVD and PCA** | [notes](lectures/ch14-symmetric-matrices-svd-pca.md) | [py](lectures/code/ch14.py) | [examples](examples/ch14_examples.md) | [ex](exercises/ch14_exercises.md) | [sol](solutions/ch14_solutions.md) |
+| 15 | **Numerical optimisation** (GD, Newton, BFGS, SGD/Adam, KKT, proximal methods, autodiff) | [notes](lectures/ch15-numerical-optimization.md) | [py](lectures/code/ch15.py) | [examples](examples/ch15_examples.md) | [ex](exercises/ch15_exercises.md) | [sol](solutions/ch15_solutions.md) |
 
-Solution code for every exercise set is in [`solutions/code/`](solutions/code/). Extended worked examples, separate from the lectures, are in [`examples/`](examples/).
+Solution code for every exercise set is in [`solutions/code/`](solutions/code/). The **worked examples** files are separate from the lectures. Each holds 6–9 extended, data-science-flavoured problems with full solutions, verified by `examples/chXX_examples.py`.
 
 ## What each chapter contains
 
