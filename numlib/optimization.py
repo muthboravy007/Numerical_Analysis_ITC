@@ -40,6 +40,44 @@ def backtracking(f, grad_x, x, p, alpha=1.0, rho=0.5, c=1e-4):
     return alpha
 
 
+def wolfe_line_search(f, grad, x, p, c1=1e-4, c2=0.9, alpha_max=50.0, max_iter=40):
+    """Strong-Wolfe line search (Nocedal & Wright, Alg. 3.5-3.6). The curvature
+    condition guarantees s^T y > 0, which BFGS/L-BFGS need."""
+    phi0 = f(x)
+    dphi0 = grad(x) @ p
+    phi = lambda a: f(x + a * p)
+    dphi = lambda a: grad(x + a * p) @ p
+
+    def zoom(lo, hi, phi_lo):
+        for _ in range(max_iter):
+            a = 0.5 * (lo + hi)
+            pa = phi(a)
+            if pa > phi0 + c1 * a * dphi0 or pa >= phi_lo:
+                hi = a
+            else:
+                da = dphi(a)
+                if abs(da) <= -c2 * dphi0:
+                    return a
+                if da * (hi - lo) >= 0:
+                    hi = lo
+                lo, phi_lo = a, pa
+        return 0.5 * (lo + hi)
+
+    a_prev, phi_prev, a = 0.0, phi0, 1.0
+    for i in range(max_iter):
+        pa = phi(a)
+        if pa > phi0 + c1 * a * dphi0 or (i > 0 and pa >= phi_prev):
+            return zoom(a_prev, a, phi_prev)
+        da = dphi(a)
+        if abs(da) <= -c2 * dphi0:
+            return a
+        if da >= 0:
+            return zoom(a, a_prev, pa)
+        a_prev, phi_prev = a, pa
+        a = min(2 * a, alpha_max)
+    return a
+
+
 def gradient_descent(f, grad, x0, lr=None, tol=1e-8, max_iter=10_000):
     """Fixed step if lr is given, otherwise Armijo backtracking."""
     x = np.asarray(x0, dtype=float)
@@ -49,6 +87,8 @@ def gradient_descent(f, grad, x0, lr=None, tol=1e-8, max_iter=10_000):
         if np.linalg.norm(g) < tol:
             break
         step = lr if lr is not None else backtracking(f, g, x, -g)
+        if step * np.linalg.norm(g) < 1e-15 * (1 + np.linalg.norm(x)):
+            break  # no representable progress
         x = x - step * g
         history.append(x.copy())
     return x, history
@@ -91,8 +131,10 @@ def bfgs(f, grad, x0, tol=1e-8, max_iter=1000):
         if np.linalg.norm(g) < tol:
             break
         p = -H @ g
-        alpha = backtracking(f, g, x, p)
+        alpha = wolfe_line_search(f, grad, x, p)
         s = alpha * p
+        if np.linalg.norm(s) < 1e-15 * (1 + np.linalg.norm(x)):
+            break  # line search stagnated at round-off level
         x_new = x + s
         g_new = grad(x_new)
         y = g_new - g
@@ -181,3 +223,86 @@ def logistic_grad(w, X, y, lam=0.0):
 def logistic_hess(w, X, y, lam=0.0):
     p = sigmoid(X @ w)
     return (X.T * (p * (1 - p))) @ X / len(y) + lam * np.eye(len(w))
+
+
+def parabolic_step(f, a, b, c):
+    """Vertex of the parabola through (a,f(a)), (b,f(b)), (c,f(c)) (Brent's building block)."""
+    fa, fb, fc = f(a), f(b), f(c)
+    num = (b - a) ** 2 * (fb - fc) - (b - c) ** 2 * (fb - fa)
+    den = (b - a) * (fb - fc) - (b - c) * (fb - fa)
+    return b - 0.5 * num / den
+
+
+def nesterov(grad, x0, lr, beta=0.9, tol=1e-8, max_iter=10_000):
+    """Nesterov accelerated gradient (look-ahead momentum)."""
+    x = np.asarray(x0, dtype=float)
+    v = np.zeros_like(x)
+    history = [x.copy()]
+    for _ in range(max_iter):
+        g = grad(x + beta * v)
+        if np.linalg.norm(grad(x)) < tol:
+            break
+        v = beta * v - lr * g
+        x = x + v
+        history.append(x.copy())
+    return x, history
+
+
+def lbfgs(f, grad, x0, m=5, tol=1e-8, max_iter=1000):
+    """Limited-memory BFGS with two-loop recursion and a Wolfe line search."""
+    x = np.asarray(x0, dtype=float)
+    g = grad(x)
+    S, Y = [], []
+    history = [x.copy()]
+    for _ in range(max_iter):
+        if np.linalg.norm(g) < tol:
+            break
+        q = g.copy()
+        alphas = []
+        for s, y in reversed(list(zip(S, Y))):
+            a = (s @ q) / (y @ s)
+            alphas.append(a)
+            q -= a * y
+        gamma = (S[-1] @ Y[-1]) / (Y[-1] @ Y[-1]) if S else 1.0
+        r = gamma * q
+        for (s, y), a in zip(zip(S, Y), reversed(alphas)):
+            b = (y @ r) / (y @ s)
+            r += s * (a - b)
+        p = -r
+        t = wolfe_line_search(f, grad, x, p)
+        if t * np.linalg.norm(p) < 1e-15 * (1 + np.linalg.norm(x)):
+            break  # line search stagnated at round-off level
+        x_new = x + t * p
+        g_new = grad(x_new)
+        s, y = x_new - x, g_new - g
+        if s @ y > 1e-12:
+            S.append(s)
+            Y.append(y)
+            if len(S) > m:
+                S.pop(0)
+                Y.pop(0)
+        x, g = x_new, g_new
+        history.append(x.copy())
+    return x, history
+
+
+def projected_gradient(grad, project, x0, lr, tol=1e-10, max_iter=10_000):
+    """x <- P(x - lr * grad(x)) for simple constraint sets."""
+    x = project(np.asarray(x0, dtype=float))
+    history = [x.copy()]
+    for _ in range(max_iter):
+        x_new = project(x - lr * grad(x))
+        history.append(x_new.copy())
+        if np.linalg.norm(x_new - x) < tol:
+            return x_new, history
+        x = x_new
+    return x, history
+
+
+def project_simplex(v):
+    """Euclidean projection onto {x >= 0, sum x = 1} (sort-based algorithm)."""
+    u = np.sort(v)[::-1]
+    css = np.cumsum(u)
+    rho = np.nonzero(u * np.arange(1, len(v) + 1) > (css - 1))[0][-1]
+    theta = (css[rho] - 1) / (rho + 1.0)
+    return np.maximum(v - theta, 0)
